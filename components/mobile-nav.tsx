@@ -18,10 +18,15 @@ export function MobileNav() {
         <ShoppingCart size={17} />
         <span>Panier</span>
       </span>
-      <span className="flex flex-col items-center gap-1 cursor-pointer">
+      <button
+        type="button"
+        data-open-login="true"
+        aria-label="Ouvrir la connexion"
+        className="flex flex-col items-center gap-1 cursor-pointer text-[#60716F] hover:text-[#006B55]"
+      >
         <UserRound size={17} />
         <span>Compte</span>
-      </span>
+      </button>
     </div>
   )
 }
