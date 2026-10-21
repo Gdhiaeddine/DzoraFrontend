@@ -19,19 +19,8 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
 import { ProductCard } from '@/components/product-card'
+import { categories, categoryIcons } from '@/lib/categories'
 
-const categories = [
-  ['Électronique', '📱', 'bg-[#E8F4F1]'],
-  ['Mode', '👕', 'bg-[#FFF0E4]'],
-  ['Maison & Cuisine', '🏠', 'bg-[#FFF7D9]'],
-  ['Beauté & Santé', '💄', 'bg-[#FDEBF1]'],
-  ['Sport & Loisirs', '⚽', 'bg-[#E9F3FF]'],
-  ['Enfants & Bébés', '🧸', 'bg-[#FFF1E5]'],
-  ['Auto & Moto', '🚗', 'bg-[#EAF0F4]'],
-  ['High-Tech', '🎧', 'bg-[#EEEAFE]'],
-  ['Meubles', '🛋️', 'bg-[#F6EDE4]'],
-  ['Jardin & Bricolage', '🔧', 'bg-[#EAF5E8]'],
-]
 
 const products = [
   { name: 'Écouteurs Bluetooth TWS', store: 'Tech Sétif', price: '3 990', old: '6 990', discount: '-43%', rating: '4.8', reviews: '125', image: 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=600&q=85' },
@@ -49,33 +38,109 @@ const sellers = [
 
 
 
-function SectionHeading({ title, subtitle, action = 'Voir tout →' }: { title: string; subtitle?: string; action?: string }) {
+function SectionHeading({
+  title,
+  subtitle,
+  action = 'Voir tout →',
+  href = '/products',
+}: {
+  title: string
+  subtitle?: string
+  action?: string
+  href?: string
+}) {
   return (
     <div className="mb-7 flex items-end justify-between gap-4">
       <div>
         <h2 className="font-display text-2xl font-extrabold tracking-[-0.03em] text-[#102A2A] sm:text-[30px]">{title}</h2>
         {subtitle && <p className="mt-2 text-sm text-[#60716F]">{subtitle}</p>}
       </div>
-      <button className="hidden shrink-0 items-center gap-2 text-sm font-bold text-[#006B55] transition-colors hover:text-[#F28C28] sm:flex">
-        {action}
+      <Link
+        href={href}
+        className="hidden shrink-0 items-center gap-2 text-sm font-bold text-[#006B55] transition-colors hover:text-[#F28C28] sm:flex"
+      >
+        <span>{action}</span>
         <ArrowRight size={16} />
-      </button>
+      </Link>
     </div>
   )
 }
 
-function PromoCard({ className, eyebrow, title, text, cta, image, dark = false }: { className: string; eyebrow: string; title: string; text: string; cta: string; image: string; dark?: boolean }) {
+function PromoCard({
+  className,
+  eyebrow,
+  title,
+  text,
+  cta,
+  image,
+  dark = false,
+}: {
+  className?: string
+  eyebrow: string
+  title: string
+  text: string
+  cta: string
+  image: string
+  dark?: boolean
+}) {
   return (
-    <article className={`relative min-h-[230px] overflow-hidden rounded-2xl p-6 ${className} ${dark ? 'text-white' : 'text-[#102A2A]'}`}>
-      <div className="relative z-10 max-w-[220px]">
-        <p className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-[#A8D6C9]' : 'text-[#C56816]'}`}>{eyebrow}</p>
-        <h3 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-[-0.04em]">{title}</h3>
-        <p className={`mt-2 text-xs ${dark ? 'text-[#C6E1D9]' : 'text-[#60716F]'}`}>{text}</p>
-        <button className={`mt-5 inline-flex items-center gap-1 text-xs font-bold ${dark ? 'text-[#FFB84D]' : 'text-[#006B55]'}`}>
-          {cta} <ArrowRight size={14} />
-        </button>
+    <article
+      className={`group relative min-h-[260px] sm:min-h-[280px] overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-7 transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/10 ${
+        dark ? 'text-white' : 'text-[#102A2A]'
+      } ${className || ''}`}
+    >
+      {/* Full Component Background Image */}
+      <img
+        src={image}
+        alt={title}
+        className="absolute inset-0 size-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+      />
+
+      {/* Adaptive Gradient Overlay for contrast & readability */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ${
+          dark
+            ? 'bg-gradient-to-r from-[#00382C]/95 via-[#004D3C]/85 to-[#004D3C]/40 group-hover:from-[#00382C]/90'
+            : 'bg-gradient-to-r from-white/95 via-white/85 to-white/30 group-hover:from-white/92'
+        }`}
+      />
+
+      {/* Text Content Area */}
+      <div className="relative z-10 flex h-full flex-col justify-between max-w-[240px] sm:max-w-[260px]">
+        <div>
+          <p
+            className={`text-[11px] font-bold uppercase tracking-wider ${
+              dark ? 'text-[#85E1C8]' : 'text-[#C56816]'
+            }`}
+          >
+            {eyebrow}
+          </p>
+          <h3 className="mt-2.5 font-display text-2xl sm:text-[26px] font-extrabold leading-tight tracking-[-0.04em]">
+            {title}
+          </h3>
+          <p
+            className={`mt-2 text-xs sm:text-sm leading-relaxed ${
+              dark ? 'text-[#D0ECE3]' : 'text-[#4A5D5A]'
+            }`}
+          >
+            {text}
+          </p>
+        </div>
+
+        <div className="pt-6">
+          <Link
+            href={`/products?category=${encodeURIComponent(eyebrow)}`}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 group-hover:gap-2.5 shadow-xs ${
+              dark
+                ? 'bg-white text-[#006B55] hover:bg-[#F28C28] hover:text-white'
+                : 'bg-[#006B55] text-white hover:bg-[#008F72]'
+            }`}
+          >
+            <span>{cta}</span>
+            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       </div>
-      <img src={image} alt="" className="absolute bottom-0 right-[-15px] h-[82%] w-[58%] object-cover object-left opacity-90 mix-blend-multiply" />
     </article>
   )
 }
@@ -86,27 +151,28 @@ export default function Page() {
   return (
     <div className="overflow-x-hidden">
       <main>
-        <section className="relative mx-auto max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8 lg:pt-7">
-          <div className="relative min-h-[520px] overflow-hidden rounded-[24px] bg-[#E7F2EF] sm:min-h-[550px]">
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(231,242,239,0.98)_0%,rgba(231,242,239,0.9)_37%,rgba(231,242,239,0.15)_75%)]" />
-            <img src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1800&q=85" alt="Architecture moderne et lumière méditerranéenne en Algérie" className="absolute inset-0 size-full object-cover object-center opacity-45" />
-            <div className="relative flex min-h-[520px] items-center px-7 py-12 sm:min-h-[550px] sm:px-12 lg:px-16">
-              <div className="max-w-[570px]">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#BBDDD4] bg-white/70 px-3 py-1.5 text-xs font-bold text-[#006B55] backdrop-blur-sm">
-                  🇩🇿 Marketplace 100% algérien
-                </div>
-                <h1 className="font-display text-[42px] font-extrabold leading-[1.04] tracking-[-0.055em] text-[#102A2A] sm:text-[58px]">
+        <section className="relative w-full overflow-hidden bg-[#E7F2EF]">
+          <div className="relative min-h-[480px] sm:min-h-[540px] md:min-h-[580px] lg:min-h-[620px] w-full overflow-hidden">
+            <img
+              src="/assets/dzoraHero.webp"
+              alt="Dzora - Le marketplace algérien"
+              className="absolute inset-0 size-full object-cover object-right md:object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#E7F2EF]/95 via-[#E7F2EF]/85 to-transparent sm:w-3/4 md:w-2/3 lg:w-3/5" />
+            <div className="relative mx-auto flex min-h-[480px] sm:min-h-[540px] md:min-h-[580px] lg:min-h-[620px] max-w-[1440px] items-center px-4 py-12 sm:px-6 lg:px-8">
+              <div className="max-w-[580px]">
+                <h1 className="font-display text-[40px] sm:text-[52px] md:text-[60px] font-extrabold leading-[1.04] tracking-[-0.055em] text-[#102A2A]">
                   Tout ce dont vous avez besoin,<br />
                   <span className="text-[#006B55]">au même endroit.</span>
                 </h1>
-                <p className="mt-5 max-w-[450px] text-base leading-7 text-[#43615C] sm:text-lg">
+                <p className="mt-5 max-w-[460px] text-base leading-7 text-[#43615C] sm:text-lg">
                   Des milliers de produits. Des vendeurs de confiance. Une livraison partout en Algérie.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-[#006B55] px-5 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(0,107,85,0.22)] transition hover:bg-[#008F72]">
+                  <button className="inline-flex items-center gap-2 rounded-xl bg-[#006B55] px-6 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(0,107,85,0.22)] transition hover:bg-[#008F72]">
                     Découvrir maintenant <ArrowRight size={17} />
                   </button>
-                  <button className="rounded-xl border border-[#B7D6CE] bg-white/70 px-5 py-3.5 text-sm font-bold text-[#006B55] transition hover:bg-white">
+                  <button className="rounded-xl border border-[#B7D6CE] bg-white/80 px-6 py-3.5 text-sm font-bold text-[#006B55] transition hover:bg-white shadow-sm">
                     Voir les promotions
                   </button>
                 </div>
@@ -116,12 +182,6 @@ export default function Page() {
                   <span className="flex items-center gap-2"><CircleUserRound size={16} className="text-[#008F72]" /> Service local</span>
                 </div>
               </div>
-              <div className="absolute bottom-8 right-8 hidden max-w-[190px] rotate-[-5deg] rounded-2xl bg-white/80 p-4 shadow-xl backdrop-blur-md xl:block">
-                <Sparkles size={17} className="text-[#F28C28]" />
-                <p className="mt-2 font-display text-sm font-bold italic leading-5 text-[#006B55]">
-                  « Dzora, c'est plus qu'un achat. C'est la confiance. »
-                </p>
-              </div>
             </div>
           </div>
         </section>
@@ -129,24 +189,58 @@ export default function Page() {
         <section className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
           <SectionHeading title="Catégories populaires" action="Voir toutes les catégories" />
           <div className="flex gap-5 overflow-x-auto pb-3 scrollbar-none sm:grid sm:grid-cols-5 sm:gap-6 lg:grid-cols-10">
-            {categories.map(([name, icon, bg]) => (
-              <button key={name} className="group flex min-w-[92px] shrink-0 flex-col items-center gap-3 text-center">
-                <span className={`grid size-[68px] place-items-center rounded-full text-2xl transition duration-200 group-hover:scale-110 ${bg}`}>
-                  {icon}
-                </span>
-                <span className="text-xs font-semibold text-[#43615C] transition group-hover:text-[#006B55]">
-                  {name}
-                </span>
-              </button>
-            ))}
+            {categories.map(([name, , bg]) => {
+              const meta = categoryIcons[name]
+              const IconComponent = meta?.icon
+              const colorClass = meta?.color || 'text-[#006B55]'
+
+              return (
+                <Link
+                  key={name}
+                  href={`/products?category=${encodeURIComponent(name)}`}
+                  className="group flex min-w-[92px] shrink-0 flex-col items-center gap-3 text-center"
+                >
+                  <span
+                    className={`grid size-[68px] place-items-center rounded-full transition duration-200 group-hover:scale-110 shadow-sm ${bg} ${colorClass}`}
+                  >
+                    {IconComponent && <IconComponent size={26} strokeWidth={1.85} aria-hidden="true" />}
+                  </span>
+                  <span className="text-xs font-semibold text-[#43615C] transition group-hover:text-[#006B55]">
+                    {name}
+                  </span>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
         <section className="mx-auto max-w-[1440px] px-4 pb-14 sm:px-6 lg:px-8">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <PromoCard className="bg-[#006B55]" eyebrow="Électronique" title="Les dernières technologies" text="Smartphones, accessoires et plus." cta="Voir la sélection" image="https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=85" dark />
-            <PromoCard className="bg-[#FFF0E4]" eyebrow="Mode" title="Style & élégance" text="Pour toutes les occasions." cta="Découvrir" image="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=85" />
-            <PromoCard className="bg-[#FFF7D9]" eyebrow="Maison & Cuisine" title="Équipez votre maison" text="Qualité et confort au quotidien." cta="Voir les offres" image="https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=800&q=85" />
+          <div className="grid gap-5 lg:grid-cols-3">
+            <PromoCard
+              className="bg-[#00382C]"
+              eyebrow="Électronique"
+              title="Les dernières technologies"
+              text="Smartphones, accessoires et plus."
+              cta="Voir la sélection"
+              image="https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1200&q=85"
+              dark
+            />
+            <PromoCard
+              className="bg-[#FFF0E4]"
+              eyebrow="Mode"
+              title="Style & élégance"
+              text="Pour toutes les occasions."
+              cta="Découvrir"
+              image="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=85"
+            />
+            <PromoCard
+              className="bg-[#FFF7D9]"
+              eyebrow="Maison & Cuisine"
+              title="Équipez votre maison"
+              text="Qualité et confort au quotidien."
+              cta="Voir les offres"
+              image="https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=85"
+            />
           </div>
         </section>
 
@@ -170,7 +264,7 @@ export default function Page() {
           <SectionHeading title="Meilleures ventes" subtitle="Les produits les plus populaires sur Dzora" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5">
             {products.map((product) => (
-              <ProductCard key={product.name} product={product} onAddToCart={() => addToCart(1)} />
+              <ProductCard key={product.name} product={product} />
             ))}
           </div>
         </section>
@@ -193,7 +287,7 @@ export default function Page() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5">
               {products.slice(0, 5).map((product, i) => (
                 <div key={product.name}>
-                  <ProductCard product={{ ...product, discount: i === 0 ? '-50%' : product.discount }} onAddToCart={() => addToCart(1)} />
+                  <ProductCard product={{ ...product, discount: i === 0 ? '-50%' : product.discount }} />
                   <div className="px-1 pt-2 text-[10px] font-semibold text-[#60716F]">
                     <div className="mb-1 flex justify-between">
                       <span>{i * 5 + 23} vendus / 30</span>
@@ -274,9 +368,12 @@ export default function Page() {
                 Créez votre boutique, publiez vos produits et touchez des clients partout en Algérie.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <button className="rounded-xl bg-[#F28C28] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#FFB84D]">
+                <Link
+                  href="/devenir-vendeur"
+                  className="inline-flex items-center rounded-xl bg-[#F28C28] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#FFB84D]"
+                >
                   Devenir vendeur <ArrowRight className="ml-1 inline" size={16} />
-                </button>
+                </Link>
                 <button className="rounded-xl border border-white/25 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">
                   Découvrir les avantages
                 </button>

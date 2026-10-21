@@ -1,4 +1,5 @@
 import { Truck } from 'lucide-react'
+import { AlgeriaFlag } from './algeria-flag'
 
 export function AnnouncementBar() {
   return (
@@ -12,8 +13,9 @@ export function AnnouncementBar() {
           <span className="hidden text-white/30 md:inline">|</span>
           <p className="hidden text-white/80 md:block">Des milliers de produits</p>
         </div>
-        <span className="hidden items-center gap-2 text-[10px] font-semibold tracking-wide text-white/85 sm:flex">
-          Algérie <span className="text-white/30">|</span> FR
+        <span className="hidden items-center gap-1.5 text-[10px] font-semibold tracking-wide text-white/85 sm:flex">
+          <AlgeriaFlag className="h-2.5 w-3.5 rounded-[2px] shadow-2xs border border-white/20" />
+          <span>Algérie</span> <span className="text-white/30">|</span> <span>FR</span>
         </span>
       </div>
     </div>

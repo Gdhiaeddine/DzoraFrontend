@@ -1,57 +1,90 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useId } from 'react'
+import Image from 'next/image'
 import {
-  ArrowRight,
-  Eye,
-  EyeOff,
   ShoppingBag,
   X,
+  Mail,
+  Eye,
+  EyeOff,
   AlertCircle,
-  Info,
+  RefreshCw,
+  Check,
+  Star,
+  Sparkles,
+  Smartphone,
+  Lock,
+  ArrowRight,
+  ShieldCheck,
 } from 'lucide-react'
+import { PhoneOtpForm } from './auth/phone-otp-form'
+import { ProfileCompletionForm } from './auth/profile-completion-form'
+import { GoogleAuthButton } from './auth/google-auth-button'
+import { AlgeriaFlag } from './algeria-flag'
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
 
-interface SignInDialogProps {
+export interface SignInDialogProps {
   isOpen: boolean
   onClose: () => void
   triggerRef?: React.RefObject<HTMLElement | null>
+  initialTab?: 'login' | 'signup'
 }
 
-export function SignInDialog({ isOpen, onClose, triggerRef }: SignInDialogProps) {
+export function SignInDialog({
+  isOpen,
+  onClose,
+  triggerRef,
+  initialTab = 'login',
+}: SignInDialogProps) {
+  const { loginWithPassword, registerWithPassword } = useAuth()
+  const router = useRouter()
+
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>(initialTab)
+  const [method, setMethod] = useState<'phone' | 'email'>('phone')
+  const [profileStep, setProfileStep] = useState(false)
+
+  // Email form state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'info' | 'error'; message: string } | null>(null)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const dialogRef = useRef<HTMLDivElement>(null)
-  const emailInputRef = useRef<HTMLInputElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const titleId = useId()
   const descriptionId = useId()
 
-  // Reset fields & feedback when closing
+  useEffect(() => {
+    if (isOpen) {
+      setAuthTab(initialTab)
+    }
+  }, [isOpen, initialTab])
+
   const handleClose = () => {
     setEmail('')
     setPassword('')
-    setShowPassword(false)
-    setFeedback(null)
+    setConfirmPassword('')
+    setError(null)
+    setMethod('phone')
+    setProfileStep(false)
+    setAgreeTerms(false)
     onClose()
   }
 
-  // Focus email field on open, restore focus on close, prevent body scroll
+  // Focus and body scroll lock
   useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
 
-      // Focus email input once modal opens
-      const timer = setTimeout(() => {
-        emailInputRef.current?.focus()
-      }, 50)
-
       return () => {
-        clearTimeout(timer)
         document.body.style.overflow = originalOverflow
         triggerRef?.current?.focus()
       }
@@ -66,29 +99,6 @@ export function SignInDialog({ isOpen, onClose, triggerRef }: SignInDialogProps)
       if (e.key === 'Escape') {
         e.preventDefault()
         handleClose()
-        return
-      }
-
-      if (e.key === 'Tab' && dialogRef.current) {
-        const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
-        if (!focusableElements.length) return
-
-        const firstElement = focusableElements[0]
-        const lastElement = focusableElements[focusableElements.length - 1]
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault()
-            lastElement.focus()
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault()
-            firstElement.focus()
-          }
-        }
       }
     }
 
@@ -98,60 +108,47 @@ export function SignInDialog({ isOpen, onClose, triggerRef }: SignInDialogProps)
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
-    // Validate fields browser-side
-    const trimmedEmail = email.trim()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-    if (!trimmedEmail) {
-      setFeedback({
-        type: 'error',
-        message: 'Veuillez saisir votre adresse e-mail.',
-      })
-      emailInputRef.current?.focus()
+    if (!email.trim() || !password) {
+      setError('Veuillez renseigner votre e-mail et mot de passe.')
       return
     }
 
-    if (!emailRegex.test(trimmedEmail)) {
-      setFeedback({
-        type: 'error',
-        message: 'Veuillez saisir une adresse e-mail valide (ex: vous@exemple.dz).',
-      })
-      emailInputRef.current?.focus()
-      return
+    if (authTab === 'signup') {
+      if (password.length < 8) {
+        setError('Le mot de passe doit contenir au moins 8 caractères.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('Les mots de passe ne correspondent pas.')
+        return
+      }
+      if (!agreeTerms) {
+        setError('Veuillez accepter les Conditions Générales de Dzora.')
+        return
+      }
     }
 
-    if (!password) {
-      setFeedback({
-        type: 'error',
-        message: 'Veuillez saisir votre mot de passe.',
-      })
-      return
+    setLoading(true)
+    try {
+      if (authTab === 'login') {
+        await loginWithPassword(email.trim(), password)
+      } else {
+        await registerWithPassword({
+          email: email.trim(),
+          password,
+        })
+      }
+      router.refresh()
+      handleClose()
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue lors de l’authentification.')
+    } finally {
+      setLoading(false)
     }
-
-    if (password.length < 8) {
-      setFeedback({
-        type: 'error',
-        message: 'Le mot de passe doit comporter au moins 8 caractères.',
-      })
-      return
-    }
-
-    // Required valid demo response (explicitly not logging in or sending data)
-    setFeedback({
-      type: 'info',
-      message:
-        'Démo uniquement : le formulaire est valide, mais aucune connexion réelle n’a été effectuée et aucune information n’a été envoyée.',
-    })
-  }
-
-  const handleCreateAccountClick = () => {
-    setFeedback({
-      type: 'info',
-      message: 'La création de compte n’est pas activée dans cette prévisualisation.',
-    })
   }
 
   return (
@@ -162,7 +159,7 @@ export function SignInDialog({ isOpen, onClose, triggerRef }: SignInDialogProps)
           handleClose()
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#102A2A]/55 p-3.5 sm:p-5 backdrop-blur-sm transition-opacity duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#102A2A]/60 p-3.5 backdrop-blur-sm transition-opacity duration-200 sm:p-5"
     >
       <div
         ref={dialogRef}
@@ -170,152 +167,410 @@ export function SignInDialog({ isOpen, onClose, triggerRef }: SignInDialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative flex max-h-[92vh] w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-[#E5EEEB] bg-white text-[#102A2A] shadow-[0_20px_50px_rgba(0,61,49,0.18)]"
+        className="relative flex max-h-[92vh] w-full max-w-[440px] md:max-w-[920px] flex-col md:flex-row overflow-hidden rounded-[28px] border border-[#E5EEEB] bg-white text-[#102A2A] shadow-[0_25px_60px_rgba(0,61,49,0.22)]"
       >
-        {/* Close Button */}
+        {/* Close Button at upper-right corner */}
         <button
           ref={closeButtonRef}
           type="button"
           aria-label="Fermer la boîte de dialogue"
           onClick={handleClose}
-          className="absolute right-3.5 top-3.5 z-10 grid size-8 place-items-center rounded-full border border-[#E5EEEB] bg-white text-[#60716F] transition hover:bg-[#F4F8F6] hover:text-[#102A2A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006B55]"
+          className="absolute right-3.5 top-3.5 z-20 grid size-8 place-items-center rounded-full border border-[#E5EEEB] bg-white text-[#60716F] transition hover:bg-[#F4F8F6] hover:text-[#102A2A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006B55] cursor-pointer"
         >
           <X size={16} />
         </button>
 
-        {/* Scrollable Modal Content */}
-        <div className="overflow-y-auto px-5 py-6 sm:px-7 sm:py-7">
-          {/* 1. Small Dzora bag mark and wordmark */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative grid size-8 place-items-center rounded-[10px] bg-[#006B55] text-white shadow-sm">
-              <ShoppingBag size={17} strokeWidth={2.5} />
-              <span className="absolute right-[6px] top-[5px] size-1.5 rounded-full bg-[#F28C28]" />
-            </div>
-            <div>
-              <span className="font-display text-xl font-extrabold leading-none tracking-[-0.04em] text-[#006B55]">
-                Dzora
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Small uppercase eyebrow */}
-          <p className="mt-3.5 text-[10px] font-bold tracking-[0.14em] text-[#006B55] uppercase">
-            ESPACE CLIENT
-          </p>
-
-          {/* 3. Main heading */}
-          <h2
-            id={titleId}
-            className="mt-1 font-display text-2xl font-extrabold tracking-[-0.03em] text-[#102A2A]"
+        {/* ========================================================= */}
+        {/*           LEFT WELCOME PANEL (Desktop ~45% width)         */}
+        {/* ========================================================= */}
+        <div className="relative hidden md:flex md:w-[44%] lg:w-[45%] shrink-0 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#006B55] via-[#005544] to-[#003B2E] p-7 lg:p-9 text-white">
+          {/* Algerian-inspired geometric decorative watermark */}
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-16 -top-16 size-64 text-white/5 select-none"
+            viewBox="0 0 200 200"
+            fill="none"
           >
-            Se connecter à Dzora
-          </h2>
+            <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="100" cy="100" r="68" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
+            <rect x="52" y="52" width="96" height="96" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="52" y="52" width="96" height="96" transform="rotate(45 100 100)" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
 
-          {/* 4. Prominent pale-mint preview notice */}
-          <div
-            id={descriptionId}
-            className="mt-3.5 rounded-xl border border-[#CDE8DB] bg-[#EAF8F2] p-3 sm:p-3.5 text-xs leading-5 text-[#234F45]"
-          >
-            <div className="flex items-start gap-2">
-              <Info size={16} className="mt-0.5 shrink-0 text-[#006B55]" />
-              <p>
-                <b>Mode prévisualisation :</b> ceci est une maquette d’interface uniquement. Aucun compte n’est authentifié. N’entrez pas de vrais identifiants : le formulaire ne transmet et n’enregistre aucune donnée.
-              </p>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
-            {/* 5. Email label & field */}
-            <div>
-              <label
-                htmlFor="signin-email"
-                className="block text-xs font-semibold text-[#102A2A]"
-              >
-                Adresse e-mail
-              </label>
-              <input
-                ref={emailInputRef}
-                id="signin-email"
-                type="email"
-                name="email"
-                autoComplete="off"
-                placeholder="vous@exemple.dz"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-xl border border-[#D9E7E2] bg-[#F7FAF9] px-3.5 text-sm outline-none transition focus:border-[#008F72] focus:bg-white focus:ring-2 focus:ring-[#008F72]/15"
+          {/* Top content: Branding, Eyebrow, Heading, Benefits */}
+          <div className="relative z-10">
+            <div className="flex items-center">
+              <Image
+                src="/assets/dzoraLogo-white-text.webp"
+                alt="Dzora"
+                width={320}
+                height={144}
+                priority
+                className="h-12 w-auto object-contain"
               />
             </div>
 
-            {/* 6. Password label & field with toggle */}
-            <div>
-              <label
-                htmlFor="signin-password"
-                className="block text-xs font-semibold text-[#102A2A]"
-              >
-                Mot de passe
-              </label>
-              <div className="relative mt-1.5">
-                <input
-                  id="signin-password"
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  autoComplete="off"
-                  placeholder="8 caractères minimum"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#D9E7E2] bg-[#F7FAF9] pl-3.5 pr-11 text-sm outline-none transition focus:border-[#008F72] focus:bg-white focus:ring-2 focus:ring-[#008F72]/15"
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 grid size-7 place-items-center rounded-lg text-[#60716F] transition hover:text-[#102A2A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006B55]"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+            <div className="mt-6">
+              <p className="text-[10px] font-extrabold tracking-[0.16em] text-[#FFB84D] uppercase">
+                VOTRE MARKETPLACE ALGÉRIENNE
+              </p>
+              <h3 className="mt-2 font-display text-2xl font-extrabold leading-tight text-white lg:text-[26px]">
+                {authTab === 'signup' ? 'Rejoignez Dzora' : 'Bienvenue chez Dzora'}
+              </h3>
+              <p className="mt-2 text-xs leading-5 text-[#C6E1D9] lg:text-[13px]">
+                Retrouvez vos produits préférés et achetez en toute confiance auprès de vendeurs vérifiés, partout en Algérie.
+              </p>
             </div>
 
-            {/* 7. Emerald primary button */}
-            <button
-              type="submit"
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#006B55] px-4 text-sm font-bold text-white shadow-[0_4px_14px_rgba(0,107,85,0.22)] transition hover:bg-[#008F72] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006B55] focus-visible:ring-offset-2 active:scale-[0.99]"
-            >
-              Tester le formulaire <ArrowRight size={16} />
-            </button>
-          </form>
+            {/* Three concise benefits */}
+            <ul className="mt-6 space-y-3 text-xs font-semibold text-white/95 lg:text-[13px]">
+              <li className="flex items-center gap-2.5">
+                <span className="grid size-5 place-items-center rounded-full bg-white/20 text-[#FFB84D] shrink-0">
+                  <Check size={12} strokeWidth={3} />
+                </span>
+                <span>Des vendeurs locaux certifiés</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="grid size-5 place-items-center rounded-full bg-white/20 text-[#FFB84D] shrink-0">
+                  <Check size={12} strokeWidth={3} />
+                </span>
+                <span>Livraison sur 58 wilayas</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="grid size-5 place-items-center rounded-full bg-white/20 text-[#FFB84D] shrink-0">
+                  <Check size={12} strokeWidth={3} />
+                </span>
+                <span>Paiement à la livraison sécurisé</span>
+              </li>
+            </ul>
+          </div>
 
-          {/* 8. Feedback area below button */}
-          <div aria-live="polite" className="mt-3.5 min-h-[1.25rem]">
-            {feedback && (
-              <div
-                className={`flex items-start gap-2.5 rounded-xl p-3 text-xs leading-5 ${
-                  feedback.type === 'error'
-                    ? 'border border-[#FCA5A5] bg-[#FEF2F2] text-[#991B1B]'
-                    : 'border border-[#CDE8DB] bg-[#EAF8F2] text-[#1E4D40]'
+          {/* Bottom decorative visual card & trust badge */}
+          <div className="relative z-10 mt-8 pt-5 border-t border-white/15">
+            <div className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 backdrop-blur-xs border border-white/10">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F28C28] text-white shadow-xs">
+                <ShoppingBag size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1 text-[11px] font-bold text-[#FFB84D]">
+                  <Star size={12} fill="currentColor" />
+                  <Star size={12} fill="currentColor" />
+                  <Star size={12} fill="currentColor" />
+                  <Sparkles size={11} className="ml-1 text-white" />
+                </div>
+                <p className="mt-0.5 truncate text-[11px] font-semibold text-white/90">
+                  Ensemble pour une Algérie connectée
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ========================================================= */}
+        {/*           RIGHT AUTH PANEL (~55% width)                   */}
+        {/* ========================================================= */}
+        <div className="relative flex flex-1 flex-col overflow-y-auto p-6 sm:p-8 lg:p-9 bg-white text-[#102A2A]">
+          {/* Mobile Logo Brand */}
+          <div className="flex items-center md:hidden mb-2">
+            <Image
+              src="/assets/dzoraLogo.webp"
+              alt="Dzora"
+              width={320}
+              height={144}
+              priority
+              className="h-10 w-auto object-contain"
+            />
+          </div>
+
+          {/* Top Pill Tabs: [ Se connecter ] | [ S'inscrire ] */}
+          {!profileStep && (
+            <div className="grid grid-cols-2 rounded-2xl bg-[#F0F5F2] p-1 text-xs font-bold mb-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('login')
+                  setError(null)
+                }}
+                className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition cursor-pointer ${
+                  authTab === 'login'
+                    ? 'bg-white text-[#006B55] shadow-xs'
+                    : 'text-[#60716F] hover:text-[#102A2A]'
                 }`}
               >
-                {feedback.type === 'error' ? (
-                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-[#DC2626]" />
-                ) : (
-                  <Info size={15} className="mt-0.5 shrink-0 text-[#006B55]" />
-                )}
-                <p className="font-medium">{feedback.message}</p>
+                <span>Se connecter</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('signup')
+                  setError(null)
+                }}
+                className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition cursor-pointer ${
+                  authTab === 'signup'
+                    ? 'bg-white text-[#006B55] shadow-xs'
+                    : 'text-[#60716F] hover:text-[#102A2A]'
+                }`}
+              >
+                <span>S&apos;inscrire</span>
+              </button>
+            </div>
+          )}
+
+          {/* Panel Heading */}
+          <h2
+            id={titleId}
+            className="font-display text-2xl font-extrabold tracking-tight text-[#102A2A]"
+          >
+            {profileStep
+              ? 'Complétez votre profil'
+              : authTab === 'signup'
+              ? 'Créer votre compte Dzora'
+              : 'Bienvenue sur Dzora'}
+          </h2>
+          <p id={descriptionId} className="mt-1 text-xs text-[#60716F]">
+            {profileStep
+              ? 'Quelques secondes pour finaliser votre inscription.'
+              : authTab === 'signup'
+              ? 'Inscrivez-vous en moins d’une minute sans mot de passe complexe.'
+              : 'Poursuivez vos achats et retrouvez vos coordonnées enregistrées.'}
+          </p>
+
+          {/* Error notice */}
+          {error && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-500" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Form Content Area */}
+          <div className="mt-5">
+            {profileStep ? (
+              /* Step 3 (Only post-signup): Profile Completion */
+              <ProfileCompletionForm
+                onSuccess={() => {
+                  handleClose()
+                  router.refresh()
+                }}
+              />
+            ) : method === 'phone' ? (
+              /* Primary: Phone OTP Form */
+              <div className="space-y-4">
+                <PhoneOtpForm
+                  mode={authTab}
+                  onSuccess={() => {
+                    handleClose()
+                    router.refresh()
+                  }}
+                  onNeedProfileCompletion={() => {
+                    setProfileStep(true)
+                  }}
+                  onSwitchToLogin={() => {
+                    setAuthTab('login')
+                  }}
+                  onSwitchToSignup={() => {
+                    setAuthTab('signup')
+                  }}
+                />
+
+                <div className="relative my-3 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200" />
+                  </div>
+                  <span className="relative bg-white px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Ou
+                  </span>
+                </div>
+
+                {/* Google OAuth Button */}
+                <GoogleAuthButton />
+
+                {/* Switch to Email option */}
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMethod('email')
+                      setError(null)
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006B55] hover:text-[#005544] hover:underline cursor-pointer"
+                  >
+                    <Mail size={14} />
+                    <span>Utiliser un e-mail à la place</span>
+                  </button>
+                </div>
               </div>
+            ) : (
+              /* Secondary: Email / Password Flow */
+              <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">
+                    Adresse e-mail
+                  </label>
+                  <div className="relative mt-1.5">
+                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="vous@exemple.dz"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-[#F7FAF9] pl-9 pr-3 text-xs outline-none transition focus:border-[#006B55] focus:bg-white text-[#102A2A]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Mot de passe
+                    </label>
+                    {authTab === 'login' && (
+                      <span className="text-[11px] font-semibold text-[#006B55] hover:underline cursor-pointer">
+                        Mot de passe oublié ?
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative mt-1.5">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-[#F7FAF9] pl-3 pr-9 text-xs outline-none transition focus:border-[#006B55] focus:bg-white text-[#102A2A]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {authTab === 'signup' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700">
+                        Confirmer le mot de passe
+                      </label>
+                      <div className="relative mt-1.5">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-[#F7FAF9] pl-3 pr-9 text-xs outline-none transition focus:border-[#006B55] focus:bg-white text-[#102A2A]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="agreeTerms"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="mt-0.5 rounded border-slate-300 text-[#006B55] focus:ring-[#006B55]"
+                      />
+                      <label htmlFor="agreeTerms" className="text-[11px] text-slate-600 leading-tight">
+                        J&apos;accepte les <span className="font-semibold text-[#006B55] hover:underline cursor-pointer">Conditions Générales</span> et la <span className="font-semibold text-[#006B55] hover:underline cursor-pointer">Politique de Confidentialité</span> de Dzora.
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#006B55] text-xs font-bold text-white shadow-md shadow-[#006B55]/20 hover:bg-[#005544] disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {loading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin text-white" />
+                  ) : authTab === 'signup' ? (
+                    'Créer mon compte'
+                  ) : (
+                    'Se connecter'
+                  )}
+                </button>
+
+                <div className="relative my-3 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200" />
+                  </div>
+                  <span className="relative bg-white px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Ou
+                  </span>
+                </div>
+
+                <GoogleAuthButton />
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMethod('phone')
+                      setError(null)
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006B55] hover:text-[#005544] hover:underline cursor-pointer"
+                  >
+                    <Smartphone size={14} />
+                    <span>Utiliser mon numéro de téléphone</span>
+                  </button>
+                </div>
+              </form>
             )}
           </div>
 
-          {/* 9. Footer line */}
-          <div className="mt-5 border-t border-[#F0F4F2] pt-4 text-center text-xs text-[#60716F]">
-            <span>Vous découvrez Dzora ?</span>
-            <button
-              type="button"
-              onClick={handleCreateAccountClick}
-              className="ml-1.5 font-bold text-[#006B55] transition hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-[#006B55] rounded"
-            >
-              Créer un compte
-            </button>
+          {/* Bottom helper prompt */}
+          {!profileStep && (
+            <div className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-600">
+              {authTab === 'signup' ? (
+                <span>
+                  Vous avez déjà un compte ?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('login')
+                      setError(null)
+                    }}
+                    className="font-bold text-[#006B55] hover:underline cursor-pointer"
+                  >
+                    Se connecter
+                  </button>
+                </span>
+              ) : (
+                <span>
+                  Pas encore de compte ?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('signup')
+                      setError(null)
+                    }}
+                    className="font-bold text-[#006B55] hover:underline cursor-pointer"
+                  >
+                    S&apos;inscrire
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Quality Guarantee Footer */}
+          <div className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400">
+            <span>Paiement à la livraison garanti partout en Algérie</span>
+            <AlgeriaFlag className="h-3 w-4.5 rounded-[2px] shadow-2xs border border-black/10 inline-block align-middle" />
           </div>
         </div>
       </div>

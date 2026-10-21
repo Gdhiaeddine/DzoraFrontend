@@ -1,21 +1,27 @@
 import Link from 'next/link'
-import { ShoppingBag } from 'lucide-react'
+import Image from 'next/image'
 
-export function Logo() {
+interface LogoProps {
+  className?: string
+  imageClassName?: string
+  variant?: 'default' | 'light' | 'white-text'
+}
+
+export function Logo({ className = '', imageClassName = '', variant = 'default' }: LogoProps) {
+  const src = variant === 'white-text' ? '/assets/dzoraLogo-white-text.webp' : '/assets/dzoraLogo.webp'
+
   return (
-    <Link href="/" className="flex items-center gap-3">
-      <div className="relative grid size-10 place-items-center rounded-[13px] bg-[#006B55] text-white shadow-sm">
-        <ShoppingBag size={20} strokeWidth={2.5} />
-        <span className="absolute right-[8px] top-[6px] size-2 rounded-full bg-[#F28C28]" />
-      </div>
-      <div>
-        <div className="font-display text-[25px] font-extrabold leading-none tracking-[-0.04em] text-[#006B55]">
-          Dzora
-        </div>
-        <div className="mt-1 text-[9px] font-semibold tracking-[0.1em] text-[#60716F]">
-          TOUT PRÈS DE VOUS
-        </div>
-      </div>
+    <Link href="/" className={`inline-flex items-center shrink-0 py-1 ${className}`}>
+      <Image
+        src={src}
+        alt="Dzora - Tout ce dont vous avez besoin"
+        width={320}
+        height={144}
+        priority
+        className={`h-14 sm:h-16 md:h-20 w-auto object-contain transition-all duration-200 ${
+          variant === 'light' ? 'brightness-0 invert' : ''
+        } ${imageClassName}`}
+      />
     </Link>
   )
 }
