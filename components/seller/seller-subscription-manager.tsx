@@ -56,22 +56,6 @@ export interface PublicPlanTier {
 
 const COMPARATIVE_PLANS: PublicPlanTier[] = [
   {
-    id: 'TRIAL',
-    name: 'Free Trial',
-    badgeText: 'Essai 14 jours',
-    monthlyPriceDa: 0,
-    yearlyPriceDa: 0,
-    commissionPercent: 8,
-    maxProducts: 5,
-    maxMonthlyOrders: 20,
-    maxStaffAccounts: 1,
-    hasLogisticsSync: false,
-    hasMultiPixels: false,
-    hasCustomDomain: false,
-    hasApiAccess: false,
-    supportType: 'Centre d’aide standard',
-  },
-  {
     id: 'BASIC',
     name: 'Basic',
     badgeText: 'Démarrage',
@@ -148,8 +132,8 @@ function SubscriptionSkeleton() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {[1, 2, 3].map((i) => (
           <div key={i} className="h-96 bg-white rounded-2xl border border-[#DCE8E3] p-5 space-y-4">
             <div className="h-5 w-32 bg-gray-200 rounded" />
             <div className="h-8 w-28 bg-gray-200 rounded" />
@@ -298,7 +282,7 @@ export function SellerSubscriptionManager({
   )
 
   return (
-    <div className="space-y-6 w-full max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-12">
       {/* Toast Alert */}
       {toastMessage && (
         <div
@@ -627,7 +611,7 @@ export function SellerSubscriptionManager({
           </div>
 
           {/* ========================================================= */}
-          {/* 4. CHANGER DE PLAN : GRILLE COMPARATIVE DES 4 FORMULES    */}
+          {/* 4. CHANGER DE PLAN : GRILLE COMPARATIVE DES 3 FORMULES    */}
           {/* ========================================================= */}
           <div id="changer-de-plan" className="space-y-4 pt-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -670,8 +654,8 @@ export function SellerSubscriptionManager({
               </div>
             </div>
 
-            {/* 4 Plans Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 3 Paid Plans Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {COMPARATIVE_PLANS.map((plan) => {
                 const isCurrent = activePlanId === plan.id
                 const price =

@@ -24,6 +24,8 @@ export function isShellFree(pathname: string | null | undefined): boolean {
   if (
     cleanPath === '/vendeur/dashboard' ||
     cleanPath.startsWith('/vendeur/dashboard/') ||
+    cleanPath === '/vendeur/produits' ||
+    cleanPath.startsWith('/vendeur/produits/') ||
     cleanPath === '/vendeur/abonnement' ||
     cleanPath.startsWith('/vendeur/abonnement/') ||
     cleanPath === '/vendeur/securite' ||

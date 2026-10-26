@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
@@ -21,6 +21,10 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { DZORA_PRODUCTS, type CatalogProduct } from '@/lib/products-data'
+import {
+  sellerProductsService,
+  sellerProductToCatalogProduct,
+} from '@/lib/seller-products-service'
 import { useCart } from '@/components/cart-context'
 import { useFavorites } from '@/components/favorites-context'
 import { CATEGORIES_DETAILED } from '@/lib/categories'
@@ -76,6 +80,47 @@ function ProductsPageContent() {
   const { isFavorite, toggleFavorite } = useFavorites()
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [addedItems, setAddedItems] = useState<Record<string, boolean>>({})
+
+  // Real approved products from admin moderation / seller system
+  const [approvedProducts, setApprovedProducts] = useState<CatalogProduct[]>([])
+  const [hasLoadedApproved, setHasLoadedApproved] = useState(false)
+
+  const fetchApproved = useCallback(async () => {
+    try {
+      const approved = await sellerProductsService.getAllApprovedProducts()
+      if (approved && approved.length > 0) {
+        setApprovedProducts(approved.map(sellerProductToCatalogProduct))
+      } else {
+        setApprovedProducts(DZORA_PRODUCTS)
+      }
+    } catch {
+      setApprovedProducts(DZORA_PRODUCTS)
+    } finally {
+      setHasLoadedApproved(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchApproved()
+
+    const handleStorageChange = () => {
+      fetchApproved()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('focus', handleStorageChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleStorageChange)
+    }
+  }, [fetchApproved])
+
+  const activeProducts = useMemo(() => {
+    if (hasLoadedApproved && approvedProducts.length > 0) {
+      return approvedProducts
+    }
+    return DZORA_PRODUCTS
+  }, [hasLoadedApproved, approvedProducts])
 
   // Sync when search params change
   useEffect(() => {
@@ -158,14 +203,14 @@ function ProductsPageContent() {
     }
   }
 
-  // Category counts based on ALL products
+  // Category counts based on active approved products
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     CATEGORIES.forEach((cat) => {
-      counts[cat] = DZORA_PRODUCTS.filter((p) => p.category === cat).length
+      counts[cat] = activeProducts.filter((p) => p.category === cat).length
     })
     return counts
-  }, [])
+  }, [activeProducts])
 
   // Reset all filters
   const handleResetFilters = () => {
@@ -197,7 +242,7 @@ function ProductsPageContent() {
 
   // Filtered & Sorted Products
   const filteredProducts = useMemo(() => {
-    return DZORA_PRODUCTS.filter((product) => {
+    return activeProducts.filter((product) => {
       // Search
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim()

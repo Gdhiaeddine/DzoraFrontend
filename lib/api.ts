@@ -1,3 +1,19 @@
+import {
+  sellerProductsService,
+  type SellerProductItem,
+  type CreateProductInput,
+  type UpdateProductInput,
+  type ProductStatus,
+} from './seller-products-service';
+
+export {
+  sellerProductsService,
+  type SellerProductItem,
+  type CreateProductInput,
+  type UpdateProductInput,
+  type ProductStatus,
+};
+
 /**
  * Dzora Marketplace API Client
  * Supports automatic JWT token attachment, refresh token cookie rotation, and error handling.
@@ -808,6 +824,24 @@ export const api = {
         body: JSON.stringify(data),
       });
     },
+
+    products: {
+      list: async (storeName: string, storeSlug: string) => {
+        return sellerProductsService.getProducts(storeName, storeSlug);
+      },
+      create: async (storeName: string, storeSlug: string, input: CreateProductInput) => {
+        return sellerProductsService.createProduct(storeName, storeSlug, input);
+      },
+      update: async (storeName: string, storeSlug: string, input: UpdateProductInput) => {
+        return sellerProductsService.updateProduct(storeName, storeSlug, input);
+      },
+      delete: async (storeSlug: string, id: string) => {
+        return sellerProductsService.deleteProduct(storeSlug, id);
+      },
+      duplicate: async (storeName: string, storeSlug: string, id: string) => {
+        return sellerProductsService.duplicateProduct(storeName, storeSlug, id);
+      },
+    },
   },
 
   admin: {
@@ -1054,6 +1088,18 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
+    },
+
+    products: {
+      getPending: async () => {
+        return sellerProductsService.getAllPendingProducts();
+      },
+      approve: async (storeSlug: string, productId: string, reviewerName?: string) => {
+        return sellerProductsService.adminApproveProduct(storeSlug, productId, reviewerName);
+      },
+      reject: async (storeSlug: string, productId: string, reason: string, reviewerName?: string) => {
+        return sellerProductsService.adminRejectProduct(storeSlug, productId, reason, reviewerName);
+      },
     },
   },
 };

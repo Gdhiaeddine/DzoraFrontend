@@ -36,7 +36,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<{ [key: string]: boolean }>({
     sellers: !pathname?.startsWith('/admin/dashboard/vendeurs'),
-    catalog: true,
+    catalog: !pathname?.startsWith('/admin/dashboard/produits') && !pathname?.startsWith('/admin/dashboard/categories'),
     finance: true,
     support: true,
     admin: true,
@@ -49,6 +49,11 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const isUsersActive = pathname?.startsWith('/admin/dashboard/utilisateurs')
   const isSellersActive = pathname?.startsWith('/admin/dashboard/vendeurs')
   const isAllSellersActive = pathname === '/admin/dashboard/vendeurs'
+  const isCatalogActive =
+    pathname?.startsWith('/admin/dashboard/produits') ||
+    pathname?.startsWith('/admin/dashboard/categories')
+  const isProductsActive = pathname === '/admin/dashboard/produits'
+  const isCategoriesActive = pathname === '/admin/dashboard/categories'
   const isCommandesActive = pathname?.startsWith('/admin/dashboard/commandes')
   const isAbonnementsActive = pathname?.startsWith('/admin/dashboard/abonnements')
   const isSettingsActive =
@@ -190,10 +195,14 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => toggleGroup('catalog')}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[#4A5D58] hover:bg-[#F4FAF7] hover:text-[#102A2A] transition font-medium text-left"
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition font-medium text-left ${
+                  isCatalogActive
+                    ? 'font-bold bg-[#E7F2EF]/60 text-[#006B55]'
+                    : 'text-[#4A5D58] hover:bg-[#F4FAF7] hover:text-[#102A2A]'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <FolderTree className="h-4 w-4 shrink-0 text-[#71827D]" />
+                  <FolderTree className={`h-4 w-4 shrink-0 ${isCatalogActive ? 'text-[#006B55]' : 'text-[#71827D]'}`} />
                   <span>Catalogue</span>
                 </div>
                 {collapsedGroups.catalog ? (
@@ -204,12 +213,26 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
               </button>
               {!collapsedGroups.catalog && (
                 <div className="ml-5 mt-1 space-y-0.5 border-l-2 border-[#DCE8E3] pl-3 py-0.5">
-                  <span className="block py-1.5 text-[11.5px] font-medium text-[#60716F] hover:text-[#006B55] cursor-pointer transition">
-                    Produits
-                  </span>
-                  <span className="block py-1.5 text-[11.5px] font-medium text-[#60716F] hover:text-[#006B55] cursor-pointer transition">
-                    Catégories
-                  </span>
+                  <Link
+                    href="/admin/dashboard/produits"
+                    className={`block py-1.5 text-[11.5px] transition ${
+                      isProductsActive
+                        ? 'font-bold text-[#006B55]'
+                        : 'font-medium text-[#60716F] hover:text-[#006B55]'
+                    }`}
+                  >
+                    Produits (Modération)
+                  </Link>
+                  <Link
+                    href="/admin/dashboard/categories"
+                    className={`block py-1.5 text-[11.5px] transition ${
+                      isCategoriesActive
+                        ? 'font-bold text-[#006B55]'
+                        : 'font-medium text-[#60716F] hover:text-[#006B55]'
+                    }`}
+                  >
+                    Catégories & Rayons
+                  </Link>
                   <span className="block py-1.5 text-[11.5px] font-medium text-[#60716F] hover:text-[#006B55] cursor-pointer transition">
                     Marques
                   </span>

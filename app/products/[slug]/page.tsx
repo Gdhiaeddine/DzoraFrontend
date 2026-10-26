@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
 import { ProductCard, type Product } from '@/components/product-card'
+import { sellerProductsService } from '@/lib/seller-products-service'
 
 interface ProductVariant {
   price: string
@@ -270,7 +271,63 @@ export default function ProductDetailPage() {
   const rawSlug = params?.slug ? String(params.slug) : ''
   const decodedSlug = decodeURIComponent(rawSlug).toLowerCase().trim()
 
-  const productData = useMemo(() => {
+  const [dynamicProduct, setDynamicProduct] = useState<ProductDetailData | null>(null)
+
+  useEffect(() => {
+    if (!decodedSlug) return
+    sellerProductsService.getProductBySlug(decodedSlug).then((sp) => {
+      if (sp) {
+        const cleanPriceStr = sp.price.toLocaleString('fr-FR').replace(/\s/g, ' ')
+        const cleanOldStr = sp.compareAtPrice ? sp.compareAtPrice.toLocaleString('fr-FR').replace(/\s/g, ' ') : ''
+        const disc = sp.compareAtPrice && sp.compareAtPrice > sp.price
+          ? `−${Math.round(((sp.compareAtPrice - sp.price) / sp.compareAtPrice) * 100)} %`
+          : ''
+
+        const detail: ProductDetailData = {
+          id: sp.id,
+          name: sp.name,
+          subtitle: sp.description || `${sp.name} · Produit officiel avec garantie`,
+          category: sp.category,
+          subCategory: sp.subcategory || 'Général',
+          store: sp.storeName,
+          storeMark: sp.storeName.slice(0, 2).toUpperCase(),
+          rating: String(sp.rating || 4.8),
+          reviews: String(sp.reviewsCount || 42),
+          soldCount: `+${sp.salesCount || 10}`,
+          colors: [['Standard', '#006B55']],
+          variants: {
+            'Standard': {
+              price: cleanPriceStr,
+              old: cleanOldStr,
+              discount: disc,
+              ram: sp.brand || 'Original',
+            },
+          },
+          gallery: sp.images && sp.images.length > 0 ? sp.images : [sp.mainImage],
+          description: sp.description || `${sp.name}. Produit authentique disponible immédiatement en livraison 58 wilayas.`,
+          tags: ['Garantie Vendeur', '100% Authentique', 'Livraison 58 wilayas', sp.brand || 'Dzora'],
+          highlights: [
+            `Article vérifié et approuvé par la modération Dzora`,
+            `Vendu et expédié par la boutique officielle ${sp.storeName}`,
+            `Paiement sécurisé à la livraison ou par carte CIB / Edahabia`,
+            `Garantie retour et assistance client Dzora`,
+          ],
+          specs: [
+            ['Marque', sp.brand || 'Original'],
+            ['Référence SKU', sp.sku],
+            ['Catégorie', sp.category],
+            ['Boutique vendeuse', sp.storeName],
+            ['Stock disponible', `${sp.stock} unités`],
+            ['Poids estimé', sp.weightKg ? `${sp.weightKg} kg` : 'Standard'],
+            ['Livraison', '58 Wilayas'],
+          ],
+        }
+        setDynamicProduct(detail)
+      }
+    })
+  }, [decodedSlug])
+
+  const staticProductData = useMemo(() => {
     if (!decodedSlug) return productCatalog['galaxy-a15']
 
     const foundKey = Object.keys(productCatalog).find((k) => {
@@ -285,6 +342,8 @@ export default function ProductDetailPage() {
     })
     return productCatalog[foundKey || 'galaxy-a15']
   }, [decodedSlug])
+
+  const productData = dynamicProduct || staticProductData
 
   const [imageIndex, setImageIndex] = useState(0)
   const [color, setColor] = useState(productData.colors[0]?.[0] || 'Défaut')

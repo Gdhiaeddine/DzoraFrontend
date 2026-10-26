@@ -622,22 +622,6 @@ function AdminLoginContent() {
                     Besoin d’aide ? Contacter l’assistance
                   </button>
                 </div>
-                {/* Demo Helper Button (Development only) */}
-                {process.env.NODE_ENV !== 'production' && (
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail('admin@dzora.dz')
-                        setPassword('Admin@Dzora2026!')
-                        clearError()
-                      }}
-                      className="text-[11px] text-[#006B55] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-lg px-2.5 py-1 font-medium transition cursor-pointer"
-                    >
-                      Remplir les identifiants d’administration (démo)
-                    </button>
-                  </div>
-                )}
                 <p className="text-[11px] text-gray-400">
                   Accès réservé au personnel autorisé. Chaque connexion est journalisée.
                 </p>
